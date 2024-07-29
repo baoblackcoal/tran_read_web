@@ -29,7 +29,7 @@ def save_to_csv(data: List[Tuple[str, str]], filename: str = 'translated.csv') -
     return df
 
 def read_aloud(text: str) -> None:
-    tts = gTTS(text, lang='zh-cn')
+    tts = gTTS(text, lang='zh-CN')
     tts.save("output.mp3")
     os.system("start output.mp3")
 
