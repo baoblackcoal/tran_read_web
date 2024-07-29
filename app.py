@@ -6,6 +6,7 @@ import pandas as pd
 from gtts import gTTS
 import os
 from typing import List, Tuple
+import platform
 
 # 初始化翻译器
 translator = Translator()
@@ -29,9 +30,16 @@ def save_to_csv(data: List[Tuple[str, str]], filename: str = 'translated.csv') -
     return df
 
 def read_aloud(text: str) -> None:
-    tts = gTTS(text, lang='zh-CN')
+    tts = gTTS(text, lang='zh-cn')
     tts.save("output.mp3")
-    os.system("start output.mp3")
+    
+    # Determine the platform and play the audio accordingly
+    if platform.system() == "Windows":
+        os.system("start output.mp3")
+    elif platform.system() == "Darwin":  # macOS
+        os.system("afplay output.mp3")
+    else:  # Linux and other
+        os.system("mpg123 output.mp3")
 
 def get_paragraphs(html_content: str) -> List[BeautifulSoup]:
     soup = BeautifulSoup(html_content, 'html.parser')
