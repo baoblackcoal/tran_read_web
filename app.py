@@ -33,13 +33,12 @@ def read_aloud(text: str) -> None:
     tts = gTTS(text, lang='zh-cn')
     tts.save("output.mp3")
     
-    # Determine the platform and play the audio accordingly
-    if platform.system() == "Windows":
-        os.system("start output.mp3")
-    elif platform.system() == "Darwin":  # macOS
-        os.system("afplay output.mp3")
-    else:  # Linux and other
-        os.system("mpg123 output.mp3")
+    # Read the saved audio file and convert it to bytes
+    with open("output.mp3", "rb") as audio_file:
+        audio_bytes = audio_file.read()
+    
+    # Display audio in the browser
+    st.audio(audio_bytes, format='audio/mp3')
 
 def get_paragraphs(html_content: str) -> List[BeautifulSoup]:
     soup = BeautifulSoup(html_content, 'html.parser')
