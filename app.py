@@ -111,14 +111,18 @@ def translate_and_save(sentences: List[str]) -> List[Tuple[str, str]]:
     translations = []
     for sentence in sentences:
         translated_sentence = translate_text(sentence)
-        translations.append((sentence, translated_sentence))
+        translations.append((translated_sentence, sentence))
     save_to_csv(translations)
     return translations
 
-def on_click_translate() -> None:
+def on_click_translate(text_content = None) -> None:
     try:
-        html_content = fetch_webpage(url)
-        paragraphs = get_sentences_from_html(html_content)
+        if (text_content is None):
+            html_content = fetch_webpage(url)
+            paragraphs = get_sentences_from_html(html_content)
+        else:
+            sentence_splitter = re.compile(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?|！|\!|。|\？)\s|(?<=\.)')
+            paragraphs = sentence_splitter.split(text_content)
         translations = translate_and_save(paragraphs)
         combined_text = ''
         for original, translated in translations:
@@ -156,8 +160,11 @@ Rigol Technologies或Rigol是中国电子测试设备的制造商。
     if st.session_state.get('content', '') == '':
         st.session_state['content'] = init_str
     content_text_area: str = st.text_area('Content', st.session_state['content'], height=300)
-    if st.button('Translate'):
+    if st.button('Translate url'):
         on_click_translate()
+
+    if st.button('Translate text'):
+        on_click_translate(content_text_area)
 
     if st.button('Read'):
         on_click_read()
