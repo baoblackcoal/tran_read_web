@@ -6,7 +6,7 @@ import pandas as pd
 from gtts import gTTS
 import os
 from typing import List, Tuple
-import platform
+import re
 
 # 初始化翻译器
 translator = Translator()
@@ -40,24 +40,36 @@ def read_aloud(text: str) -> None:
     # Display audio in the browser
     st.audio(audio_bytes, format='audio/mp3')
 
-def get_paragraphs(html_content: str) -> List[BeautifulSoup]:
+def remove_bracketed_numbers(text: str) -> str:
+    return re.sub(r'\[\d+\]', '', text)
+
+def get_sentences_from_html(html_content: str) -> List[str]:
     soup = BeautifulSoup(html_content, 'html.parser')
     paragraphs = soup.find_all('p')
-    return paragraphs
+    sentences = []
 
-def translate_and_save(paragraphs: List[BeautifulSoup]) -> List[Tuple[str, str]]:
-    translations = []
+    # Improved regular expression to split sentences more accurately
+    sentence_splitter = re.compile(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?|！|\!|。|\？)\s|(?<=\.)')
+
     for para in paragraphs:
-        original_text = para.get_text()
-        translated_text = translate_text(original_text)
-        translations.append((original_text, translated_text))
+        text = para.get_text()
+        text = remove_bracketed_numbers(text)  # Remove bracketed numbers
+        sentences.extend(sentence_splitter.split(text))
+
+    return sentences
+
+def translate_and_save(sentences: List[str]) -> List[Tuple[str, str]]:
+    translations = []
+    for sentence in sentences:
+        translated_sentence = translate_text(sentence)
+        translations.append((sentence, translated_sentence))
     save_to_csv(translations)
     return translations
 
 def on_click_translate() -> None:
     try:
         html_content = fetch_webpage(url)
-        paragraphs = get_paragraphs(html_content)
+        paragraphs = get_sentences_from_html(html_content)
         translations = translate_and_save(paragraphs)
         combined_text = ''
         for original, translated in translations:
