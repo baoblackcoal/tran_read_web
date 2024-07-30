@@ -13,7 +13,6 @@ import base64
 import time
 import streamlit.components.v1 as components
 
-os.system('apt-get install -y ffmpeg')
 
 # 初始化翻译器
 translator = Translator()
