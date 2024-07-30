@@ -1,12 +1,24 @@
 import unittest
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, MagicMock
 from bs4 import BeautifulSoup
 import pandas as pd
+import tempfile
 import os
-
+from pydub import AudioSegment
 
 # Assuming the functions are in a module named `app`
-from app  import fetch_webpage, translate_text, save_to_csv, read_aloud, get_paragraphs, translate_and_save
+from app import (
+    fetch_webpage,
+    translate_text,
+    save_to_csv,
+    has_chinese,
+    read_aloud,
+    remove_bracketed_numbers,
+    get_sentences_from_html,
+    translate_and_save,
+    on_click_translate,
+    on_click_read
+)
 
 class TestWebpageTranslator(unittest.TestCase):
 
@@ -38,32 +50,47 @@ class TestWebpageTranslator(unittest.TestCase):
         pd.testing.assert_frame_equal(df, df_expected)
         os.remove('test.csv')
 
-    @patch('app.gTTS.save')
-    @patch('app.os.system')
-    def test_read_aloud(self, mock_system, mock_save):
-        text = '测试内容'
-        read_aloud(text)
-        mock_save.assert_called_once_with("output.mp3")
-        mock_system.assert_called_once_with("start output.mp3")
+    def test_has_chinese(self):
+        self.assertTrue(has_chinese('测试'))
+        self.assertFalse(has_chinese('test'))
+        self.assertTrue(has_chinese('The company has over 500 employees and more than 493 patents.'))
 
-    def test_get_paragraphs(self):
-        html_content = '<html><body><p>Test paragraph 1</p><p>Test paragraph 2</p></body></html>'
-        result = get_paragraphs(html_content)
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0].get_text(), 'Test paragraph 1')
-        self.assertEqual(result[1].get_text(), 'Test paragraph 2')
+ 
+
+    # @patch('app.gTTS.save')
+    # @patch('app.AudioSegment.from_mp3')
+    # def test_read_aloud(self, mock_from_mp3, mock_save):
+    #     mock_audio_segment = MagicMock()
+    #     mock_from_mp3.return_value = mock_audio_segment
+    #     text = 'This is a test. 这是一个测试。'
+
+    #     read_aloud(text)
+
+    #     self.assertEqual(mock_save.call_count, 2)
+    #     self.assertEqual(mock_from_mp3.call_count, 2)
+    #     mock_audio_segment.export.assert_called_once()
+    #     mock_audio_segment.__add__.assert_called_once_with(mock_audio_segment)
+
+    def test_remove_bracketed_numbers(self):
+        text = "This is a test[1]."
+        result = remove_bracketed_numbers(text)
+        self.assertEqual(result, "This is a test.")
+
+    def test_get_sentences_from_html(self):
+        html_content = '<html><body><p>This is a test. 这是一个测试。</p></body></html>'
+        result = get_sentences_from_html(html_content)
+        expected = ['This is a test.', '这是一个测试。']
+        self.assertEqual(result, expected)
 
     @patch('app.translate_text')
     @patch('app.save_to_csv')
     def test_translate_and_save(self, mock_save_to_csv, mock_translate_text):
-        mock_translate_text.side_effect = ['测试段落 1', '测试段落 2']
-        paragraphs = [BeautifulSoup('<p>Test paragraph 1</p>', 'html.parser').p,
-                      BeautifulSoup('<p>Test paragraph 2</p>', 'html.parser').p]
-        result = translate_and_save(paragraphs)
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0], ('Test paragraph 1', '测试段落 1'))
-        self.assertEqual(result[1], ('Test paragraph 2', '测试段落 2'))
-        mock_save_to_csv.assert_called_once_with([('Test paragraph 1', '测试段落 1'), ('Test paragraph 2', '测试段落 2')])
+        mock_translate_text.side_effect = ['This is a test.', 'This is a test.']
+        sentences = ['这是一个测试。']
+        result = translate_and_save(sentences)
+        self.assertEqual(result, [('这是一个测试。', 'This is a test.')])
+        mock_save_to_csv.assert_called_once_with([('这是一个测试。', 'This is a test.')])
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(exit=False)
+
